@@ -83,7 +83,7 @@
     var dots   = Array.prototype.slice.call(slider.querySelectorAll('.slider__dot'));
     if (slides.length < 2) return;
 
-    var INTERVAL = 5000;
+    var INTERVAL = 3200;
     var index    = 0;
     var timer    = null;
 
@@ -359,17 +359,32 @@
      ====================================================================== */
 
   function initCounters() {
-    var section     = document.getElementById('trust');
-    var customersEl = document.getElementById('count-customers');
-    var reviewsEl   = document.getElementById('count-reviews');
-    if (!section || !customersEl || !reviewsEl) return;
+    var section = document.getElementById('trust');
+    if (!section) return;
 
-    var CUSTOMERS = 1000;
-    var RATING    = 4.9;
+    // id -> [final value, decimal places, suffix]
+    var COUNTERS = [
+      ['count-customers', 1000, 0, '+'],
+      ['count-reviews',    4.9, 1, '/5'],
+      ['count-lenders',     40, 0, '+'],
+      ['count-types',        6, 0, '']
+    ];
+
+    var targets = COUNTERS
+      .map(function (c) {
+        var el = document.getElementById(c[0]);
+        return el ? { el: el, value: c[1], decimals: c[2], suffix: c[3] } : null;
+      })
+      .filter(Boolean);
+
+    if (!targets.length) return;
+
+    function render(t, value) {
+      t.el.textContent = value.toFixed(t.decimals) + t.suffix;
+    }
 
     function settle() {
-      customersEl.textContent = CUSTOMERS + '+';
-      reviewsEl.textContent   = RATING.toFixed(1) + '/5';
+      targets.forEach(function (t) { render(t, t.value); });
     }
 
     if (prefersReducedMotion.matches) { settle(); return; }
@@ -379,8 +394,7 @@
       if (started) return;
       started = true;
 
-      customersEl.textContent = '0+';
-      reviewsEl.textContent   = '0.0/5';
+      targets.forEach(function (t) { render(t, 0); });
 
       var duration = 1800;
       var start    = performance.now();
@@ -389,8 +403,7 @@
         var progress = Math.min((now - start) / duration, 1);
         var eased    = 1 - Math.pow(1 - progress, 3);
 
-        customersEl.textContent = Math.floor(CUSTOMERS * eased) + '+';
-        reviewsEl.textContent   = (RATING * eased).toFixed(1) + '/5';
+        targets.forEach(function (t) { render(t, t.value * eased); });
 
         if (progress < 1) requestAnimationFrame(tick);
         else settle();

@@ -15,6 +15,7 @@ assets/
   img/prosvelop-mark.png         Emblem only, no wordmark
   img/prosvelop-logo.png         Original stacked logo (emblem above wordmark)
   img/favicon-64.png             Tab icon (emblem)
+  img/lenders/                   Bank & NBFC logos (21 files)
   img/apple-touch-icon.png       iOS home-screen icon (emblem on white)
 archive/                       Previous single-file version, kept for reference
 ```
@@ -28,7 +29,10 @@ archive/                       Previous single-file version, kept for reference
 | Foldables / landscape   | `styles.css` §22 Device capability & posture                |
 | Loan types & documents  | `main.js` → `LOANS` object                                  |
 | Phone / WhatsApp number | `main.js` → `WHATSAPP` and `PHONE`, plus `href`s in the HTML |
-| Lender list             | `index.html` → `.lender-grid`                               |
+| Lender list             | `index.html` → `.lender-grid`, files in `assets/img/lenders/`|
+| Slide look              | `styles.css` §7 → `.slide::before` (the light veil)          |
+| Slide speed             | `main.js` → `INTERVAL` in `initSlider`                       |
+| Counter values          | `main.js` → `COUNTERS` in `initCounters`                     |
 | Footer columns          | `index.html` → `.footer__inner`, styles in `styles.css` §18  |
 | Social rail position    | `styles.css` §6 → `.social-rail`                            |
 | Menu items / order      | `index.html` → `.nav` and the footer `Explore` column        |
@@ -95,6 +99,36 @@ bottom bar with the lender disclaimer and copyright. Collapses to 2-up below
 820px and a single column below 600px, where the contact column spans the full
 width so the postal address stops double-wrapping.
 
+## Hero slides
+
+Slides use a light water/sky veil (`.slide::before`) rather than a dark scrim:
+near-white over the copy on the left, fading to about 34% on the right so the
+photograph still shows through. Slide text is therefore dark, and the dots are
+dark green rather than white. Rotation is 3.2 seconds.
+
+If you ever swap the veil back to a dark treatment, remember to flip
+`.slide__inner`, its `h1`, its paragraphs and `.slider__dot::before` back to
+light colours — they are all keyed to a light background now.
+
+## Lender logos
+
+`assets/img/lenders/` holds 21 real bank and NBFC logos, downloaded from
+Wikimedia Commons and served locally so nothing depends on a third-party host
+at runtime. Logos arrive in very different aspect ratios, so `.lender img` uses
+a fixed 130×46 box with `object-fit: contain` to make them read as one evenly
+weighted set.
+
+Four heavy files (RBL, ICICI, Bank of Maharashtra, Bank of Baroda) were
+rasterised or downscaled to display size — the RBL SVG alone contained 31
+embedded bitmaps and weighed 420KB. The folder is now 272KB in total.
+
+**Before publishing:** confirm you are entitled to display each mark. The
+disclaimer under the grid already states that the logos represent the lender
+network rather than certified partnerships, but active tie-ups should be
+verified. Kotak Mahindra, Tata Capital, L&T Finance and Aditya Birla Capital
+were dropped from the list because no usable logo was available; other lenders
+were used in their place.
+
 ## Menu order
 
 The header menu and the footer **Explore** column both follow the order the
@@ -126,6 +160,13 @@ EMI result.
 - LinkedIn, Facebook and Instagram icons currently link to `#` — add the real
   profile URLs. They appear in two places now: the fixed social rail and the
   footer, so update both.
-- Director cards show name, role and a "Talk to us" link. No biography text was
-  written, since anything about real people would have been invented. Add real
-  bios or photographs when you have them.
+- Director cards show a name and an avatar icon only. No biography or job text
+  was written, since anything about real people would have been invented. Add
+  real bios or photographs when you have them.
+- The six customer reviews are **sample wording**, clearly labelled as such by
+  the note under the grid. Replace them with genuine responses before going
+  live, and remove that note once you do.
+- The trust counters animate from zero when scrolled into view. The figures
+  themselves are fixed values in `main.js`; they do not tick upward on their
+  own, because a number that invents its own growth would be misleading. Wire
+  them to real data if you want them to move.
