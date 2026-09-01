@@ -83,7 +83,7 @@
     var dots   = Array.prototype.slice.call(slider.querySelectorAll('.slider__dot'));
     if (slides.length < 2) return;
 
-    var INTERVAL = 3200;
+    var INTERVAL = 2400;
     var index    = 0;
     var timer    = null;
 

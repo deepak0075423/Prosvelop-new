@@ -924,8 +924,17 @@ p { text-wrap: pretty; }
   color: var(--text);
 }
 
-/* Gold rule under the name, echoing the divider in the logo wordmark */
-.director__name::after {
+.director__role {
+  margin-top: 0.3rem;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Gold rule closes the card, echoing the divider in the logo wordmark */
+.director__role::after {
   content: "";
   display: block;
   width: 34px;
