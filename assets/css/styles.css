@@ -195,7 +195,6 @@ p { text-wrap: pretty; }
 
 .section { 
   padding-block: var(--section-y); 
-  max-width: unset;
 }
 
 .section-head {
@@ -529,6 +528,7 @@ p { text-wrap: pretty; }
 }
 
 .loan-card {
+  background-color: var(--water) !important;
   display: flex;
   flex-direction: column;
   align-items: center;
