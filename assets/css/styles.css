@@ -193,7 +193,10 @@ p { text-wrap: pretty; }
   padding-inline: max(var(--gutter), var(--safe-l)) max(var(--gutter), var(--safe-r));
 }
 
-.section { padding-block: var(--section-y); }
+.section { 
+  padding-block: var(--section-y); 
+  max-width: unset;
+}
 
 .section-head {
   display: flex;
