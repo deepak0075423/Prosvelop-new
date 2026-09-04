@@ -364,7 +364,7 @@
 
     // id -> [final value, decimal places, suffix]
     var COUNTERS = [
-      ['count-customers', 1000, 0, '+'],
+      ['count-customers', 5000, 0, '+'],
       ['count-reviews',    4.9, 1, '/5'],
       ['count-lenders',     40, 0, '+'],
       ['count-types',        6, 0, '']
