@@ -1328,10 +1328,38 @@ a.footer__contact-item .footer__icon { margin-top: 0; }
   color: #7d8f97;
 }
 
-.footer__copyright {
+/* Copyright and build credit share the closing row, splitting apart on
+   wide screens and stacking on narrow ones. */
+.footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem 1.5rem;
   padding-block: 0.875rem calc(1.25rem + var(--safe-b));
+}
+
+.footer__copyright,
+.footer__credit {
   font-size: var(--fs-xs);
   color: var(--ink-soft);
+}
+
+.footer__credit a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  font-weight: 700;
+  color: var(--green);
+  transition: color .2s var(--ease);
+}
+
+@media (hover: hover) {
+  .footer__credit a:hover {
+    color: var(--green-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 
@@ -1645,7 +1673,8 @@ a.footer__contact-item .footer__icon { margin-top: 0; }
   .loan-card:hover { transform: none; box-shadow: none; }
 
   .nav__link,
-  .footer__links a { min-height: var(--tap); }
+  .footer__links a,
+  .footer__credit a { min-height: var(--tap); }
 
   /* `a.footer__contact-item` in §18 outranks a bare class selector here, so
      this override has to match its specificity. */
