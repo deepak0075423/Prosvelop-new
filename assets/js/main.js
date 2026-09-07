@@ -427,6 +427,81 @@
 
 
   /* ======================================================================
+     SCROLL REVEAL — cards rise into view, staggered along each row
+
+     Deliberately rect-based rather than IntersectionObserver. The failure
+     mode matters here: these are the page's main content blocks, so a
+     throttled or unavailable observer must never be able to leave them
+     blank. Two guarantees below make that impossible:
+       1. anything already on screen at load is never hidden at all;
+       2. anything off screen is revealed by the next scroll tick.
+     ====================================================================== */
+
+  function initReveal() {
+    if (prefersReducedMotion.matches) return;
+
+    var items = [];
+    ['.loan-grid > *', '.feature-grid > *', '.lender-grid > *'].forEach(function (selector) {
+      Array.prototype.slice.call(document.querySelectorAll(selector))
+        .forEach(function (el, i) {
+          el.dataset.revealIndex = String(i % 6);   // stagger restarts each row
+          items.push(el);
+        });
+    });
+    if (!items.length) return;
+
+    function viewport() {
+      return window.innerHeight || document.documentElement.clientHeight;
+    }
+
+    // Only hide what is genuinely below the fold.
+    var pending = items.filter(function (el) {
+      if (el.getBoundingClientRect().top < viewport() * 0.9) return false;
+      el.classList.add('reveal');
+      return true;
+    });
+    if (!pending.length) return;
+
+    function show(el) {
+      el.style.transitionDelay = (Number(el.dataset.revealIndex) * 70) + 'ms';
+      el.classList.add('is-revealed');
+    }
+
+    function sweep() {
+      var limit = viewport() - 40;
+      pending = pending.filter(function (el) {
+        if (el.getBoundingClientRect().top > limit) return true;
+        show(el);
+        return false;
+      });
+      if (!pending.length) teardown();
+    }
+
+    // Time-throttled rather than rAF-throttled: the work is a handful of rect
+    // reads on a list that only shrinks, and this keeps the reveal working
+    // even where animation frames are throttled or suspended.
+    var last = 0;
+    function onScroll() {
+      var now = Date.now();
+      if (now - last < 80) return;
+      last = now;
+      sweep();
+    }
+
+    function teardown() {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('load', onScroll);
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('load', onScroll);   // images can shift the layout
+    sweep();
+  }
+
+
+  /* ======================================================================
      SCROLL SPY — marks the nav link for the section in view
      ====================================================================== */
 
@@ -468,6 +543,7 @@
     initCalculator();
     initQuickApply();
     initCounters();
+    initReveal();
     initScrollSpy();
   }
 
