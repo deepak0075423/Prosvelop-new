@@ -313,7 +313,15 @@
             (Math.pow(1 + monthlyRate, months) - 1);
       }
 
-      valueEl.textContent = formatter.format(emi);
+      var next = formatter.format(emi);
+      if (next !== valueEl.textContent && !prefersReducedMotion.matches) {
+        // restart the flash even on consecutive changes
+        valueEl.classList.remove('is-updated');
+        void valueEl.offsetWidth;
+        valueEl.classList.add('is-updated');
+      }
+
+      valueEl.textContent = next;
       metaEl.textContent  = 'For ' + formatter.format(principal) + ' · ' +
                             annual + '% · ' + years + ' years';
     }
@@ -440,11 +448,34 @@
   function initReveal() {
     if (prefersReducedMotion.matches) return;
 
+    // Grouped so the stagger restarts per block rather than running away
+    // across the whole page.
+    // [selector, cycle] — the cycle is walked per item, so neighbours in a
+    // grid arrive by different routes instead of marching in as one block.
+    // '' means the default rise.
+    var GROUPS = [
+      ['.section-head > *',     ['']],
+      ['.directors__head > *',  ['']],
+      ['.loan-grid > *',        ['reveal--flip', 'reveal--scale', 'reveal--drop',
+                                 'reveal--tilt', 'reveal--scale', 'reveal--flip']],
+      ['.feature-grid > *',     ['reveal--left', 'reveal--drop', 'reveal--right']],
+      ['.about-points > *',     ['reveal--scale', 'reveal--drop']],
+      ['.why-item',             ['reveal--left']],
+      ['.about-usp li',         ['reveal--left']],
+      ['.director-grid > *',    ['reveal--left', 'reveal--right']],
+      ['.testimonial-grid > *', ['reveal--tilt', 'reveal--scale', 'reveal--flip',
+                                 'reveal--drop']],
+      ['.lender-grid > *',      ['reveal--scale', 'reveal--flip', 'reveal--drop']]
+    ];
+
     var items = [];
-    ['.loan-grid > *', '.feature-grid > *', '.lender-grid > *'].forEach(function (selector) {
+    GROUPS.forEach(function (group) {
+      var selector = group[0], cycle = group[1];
       Array.prototype.slice.call(document.querySelectorAll(selector))
         .forEach(function (el, i) {
           el.dataset.revealIndex = String(i % 6);   // stagger restarts each row
+          var variant = cycle[i % cycle.length];
+          if (variant) el.dataset.revealVariant = variant;
           items.push(el);
         });
     });
@@ -456,19 +487,20 @@
 
     // Only hide what is genuinely below the fold.
     var pending = items.filter(function (el) {
-      if (el.getBoundingClientRect().top < viewport() * 0.9) return false;
+      if (el.getBoundingClientRect().top < viewport() * 0.92) return false;
       el.classList.add('reveal');
+      if (el.dataset.revealVariant) el.classList.add(el.dataset.revealVariant);
       return true;
     });
     if (!pending.length) return;
 
     function show(el) {
-      el.style.transitionDelay = (Number(el.dataset.revealIndex) * 70) + 'ms';
+      el.style.transitionDelay = (Number(el.dataset.revealIndex) * 115) + 'ms';
       el.classList.add('is-revealed');
     }
 
     function sweep() {
-      var limit = viewport() - 40;
+      var limit = viewport() - 90;
       pending = pending.filter(function (el) {
         if (el.getBoundingClientRect().top > limit) return true;
         show(el);
@@ -496,8 +528,158 @@
 
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll, { passive: true });
-    window.addEventListener('load', onScroll);   // images can shift the layout
+    window.addEventListener('load', onScroll);       // images can shift the layout
+    window.addEventListener('hashchange', function () { last = 0; sweep(); });
+
     sweep();
+    // Landing on a #fragment jumps the page without always firing a scroll
+    // event, so re-check shortly after load rather than relying on one.
+    [120, 400, 900].forEach(function (t) {
+      window.setTimeout(function () { last = 0; sweep(); }, t);
+    });
+  }
+
+
+  /* ======================================================================
+     CHROME ON SCROLL — header shadow and the back-to-top control
+     ====================================================================== */
+
+  function initScrollChrome() {
+    var header   = document.querySelector('.header');
+    var toTop    = document.querySelector('.to-top');
+    var progress = document.querySelector('.scroll-progress span');
+    if (!header && !toTop && !progress) return;
+
+    var last = 0;
+    function update() {
+      var doc = document.documentElement;
+      var y   = window.scrollY || doc.scrollTop || 0;
+
+      if (header) header.classList.toggle('is-scrolled', y > 40);
+      if (toTop)  toTop.classList.toggle('is-visible', y > 600);
+
+      if (progress) {
+        var travel = doc.scrollHeight - window.innerHeight;
+        var ratio  = travel > 0 ? Math.min(Math.max(y / travel, 0), 1) : 0;
+        progress.style.setProperty('--progress', ratio.toFixed(4));
+      }
+    }
+
+    function onScroll() {
+      var now = Date.now();
+      if (now - last < 40) return;
+      last = now;
+      update();
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('load', onScroll);
+    update();
+
+    if (toTop) {
+      toTop.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReducedMotion.matches ? 'auto' : 'smooth'
+        });
+      });
+    }
+  }
+
+
+  /* ======================================================================
+     POINTER EFFECTS — spotlight, 3D tilt, magnetic buttons, orb parallax
+
+     All pointer-only and all vanilla: these are cheap enough that pulling in
+     an animation library for them would cost more than it saves.
+     ====================================================================== */
+
+  function initPointerFX() {
+    // No cursor to follow on touch, and reduced-motion users opted out.
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    if (prefersReducedMotion.matches) return;
+
+    /* -- Spotlight + 3D tilt on cards ----------------------------------
+       [selector, hover lift in px, has a spotlight layer]
+       The lift has to match each card's own CSS hover offset, because the
+       inline transform written below replaces it wholesale. ------------- */
+    var TILT = 7;   // degrees at the far edge
+
+    // [selector, hover lift in px, tilts as well as glows]
+    var TILTABLE = [
+      ['.loan-card',        6, true],
+      ['.lender',           3, true],
+      ['.feature',          4, true],
+      ['.testimonial',      4, true],
+      ['.about-points > *', 3, true],
+      ['.why-item',         0, false],
+      ['.apply-grid',       0, false]
+    ];
+
+    TILTABLE.forEach(function (entry) {
+      var selector = entry[0], lift = entry[1], tilts = entry[2];
+
+      document.querySelectorAll(selector).forEach(function (card) {
+        card.addEventListener('pointermove', function (event) {
+          var r  = card.getBoundingClientRect();
+          var px = (event.clientX - r.left) / r.width;
+          var py = (event.clientY - r.top)  / r.height;
+
+          // Every entry gets the glow; only card-shaped ones also tilt.
+          card.style.setProperty('--mx', (px * 100).toFixed(2) + '%');
+          card.style.setProperty('--my', (py * 100).toFixed(2) + '%');
+
+          if (!tilts) return;
+
+          // Written inline so it beats the reveal's `transform: none` without
+          // needing an ever-escalating specificity fight in the stylesheet.
+          card.style.transform =
+            'perspective(900px) rotateX(' + ((0.5 - py) * TILT).toFixed(2) + 'deg)' +
+            ' rotateY(' + ((px - 0.5) * TILT).toFixed(2) + 'deg)' +
+            ' translateY(-' + lift + 'px)';
+        });
+
+        card.addEventListener('pointerleave', function () {
+          card.style.removeProperty('--mx');
+          card.style.removeProperty('--my');
+          if (tilts) card.style.transform = '';   // hand control back to CSS
+        });
+      });
+    });
+
+    /* -- Magnetic buttons ---------------------------------------------- */
+    document.querySelectorAll('.btn--primary, .to-top').forEach(function (btn) {
+      btn.addEventListener('pointermove', function (event) {
+        var r = btn.getBoundingClientRect();
+        btn.style.transform =
+          'translate(' + ((event.clientX - r.left - r.width  / 2) * 0.22).toFixed(1) + 'px,' +
+                        ((event.clientY - r.top  - r.height / 2) * 0.22).toFixed(1) + 'px)';
+      });
+
+      btn.addEventListener('pointerleave', function () {
+        btn.style.transform = '';
+      });
+    });
+
+    /* -- Ambient orbs drift with the pointer ---------------------------- */
+    var ambient = document.querySelectorAll('.ambient');
+    if (!ambient.length) return;
+
+    var last = 0;
+    window.addEventListener('pointermove', function (event) {
+      var now = Date.now();
+      if (now - last < 60) return;
+      last = now;
+
+      var dx = (event.clientX / window.innerWidth  - 0.5) * 34;
+      var dy = (event.clientY / window.innerHeight - 0.5) * 34;
+
+      ambient.forEach(function (sec) {
+        sec.style.setProperty('--px', dx.toFixed(1) + 'px');
+        sec.style.setProperty('--py', dy.toFixed(1) + 'px');
+      });
+    }, { passive: true });
   }
 
 
@@ -544,6 +726,8 @@
     initQuickApply();
     initCounters();
     initReveal();
+    initScrollChrome();
+    initPointerFX();
     initScrollSpy();
   }
 
