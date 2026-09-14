@@ -166,41 +166,92 @@
     personal: {
       title: 'Personal Loan',
       desc: 'A simple route to explore financing for eligible personal requirements.',
-      docs: ['PAN Card', 'Aadhaar / valid KYC ID', 'Recent salary slips or income proof',
-             'Recent bank statement', 'Address proof, if required']
+      docs: [
+        { label: 'Identity Proof', text: 'Passport, Driving License, PAN Card, Aadhar Card' },
+        { label: 'Proof of Residence or Address Proof', text: 'Passport, Driving License, PAN Card, Aadhar Card, Electricity Bill, Telephone Bill, Ration Card' },
+        { label: 'Age Proof', text: 'Passport, Driving License, PAN Card, Aadhar Card' },
+        { label: 'Income Proof', text: '1 year Bank statement, 3 months Salary Slips' },
+        { label: 'Employment Proof', text: 'Employment Certificate, ID Card Office address proof' },
+        { label: 'Photograph', text: 'Passport-size photographs' },
+        { label: 'Income tax returns', text: 'Documents of the past 2 years to verify income and tax payment history' }]
     },
     business: {
       title: 'Business Loan',
-      desc: 'Loan assistance for eligible business working-capital or expansion requirements.',
-      docs: ['PAN Card & KYC', 'Business registration / proof', 'Bank statements',
-             'ITR / financial statements, as applicable', 'Business address proof']
+      desc: 'Submit the following documents to begin with the loan process:',
+      docs: ['PAN Card', 
+        'Address Proof for Residence such as Passport, Aadhar Card, Electricity Bill', 
+        'ITR for the past 2-3 years', 
+        'Current Bank Account Statement for the last 12 months', 
+        'Address proof for Business such as the Electricity Bill', 
+        'Sanction letter and Repayment schedule of existing loan', 
+        'GST registration certificate and GST returns of latest 2 years', 
+        'Udyam Aadhar registration certificate', 
+        'Business Continuity proof of 3 years (3 years old ITR/Company registration etc)', 
+        'Company PAN Card, Certificate of Incorporation, MOA, AOA List of Directors and Shareholding pattern for Pvt Ltd companies', 
+        'Partnership Deed, Company pan Card for Partnership Companies'],
     },
     home: {
       title: 'Home Loan',
       desc: 'Financing assistance for eligible home purchase, construction or related requirements.',
-      docs: ['PAN Card & KYC', 'Income proof / salary slips', 'Bank statements',
-             'Property documents, as applicable', 'Address proof']
+      docs: [
+        { heading: '1. Salaried Individuals' },
+        'PAN Card',
+        'Aadhar card',
+        'Form 16',
+        'Employee Identity Card',
+        '3 Months Salary Slip',
+        '6 Month Bank Account Statement',
+
+        { heading: '2. Self-Employed Individuals' },
+        'PAN Card',
+        'Aadhar Card',
+        'Partnership Deed',
+        'AOA',
+        'MOA',
+        'Financial Statement Audited by CA',
+        'Profit & Loss Account Statement',
+        'Balance Sheet',
+        '6 Months Bank Account Statement',
+        'Professional Practice License for Doctors',
+        'Registration Certificate of Establishment for Shops, Factories, and Other Establishments',
+        'Business Address Proof']
     },
     mortgage: {
       title: 'Mortgage Loan',
       desc: 'Explore eligible funding against property, subject to property and borrower assessment.',
-      docs: ['PAN Card & KYC', 'Income proof', 'Bank statements',
-             'Property ownership / title documents', 'Property-related papers as requested by lender']
+      docs: ['Proof of identity/residence',
+       'Proof of income',
+        'Property-related documents',
+       'Proof of Business (for self-employed)',
+        'Account statement for the last 6 months']
     },
     car: {
-      title: 'Auto Loan',
+      title: 'Car Loan',
       desc: 'Loan assistance for eligible pre-owned vehicle purchases, subject to lender and vehicle assessment.',
-      docs: ['PAN Card & KYC', 'Income proof', 'Bank statements',
-             'Vehicle RC / seller documents, as applicable', 'Insurance / valuation documents, if required']
+      docs: ['KYC documents',
+        'Salary Slip (latest 3 months)',
+        'Last 2 years\' ITR as proof of income',
+        'Salary account statement(latest 6 months)']
     },
     doctor: {
       title: 'Doctor Loan',
       desc: 'Loan assistance for doctors and medical professionals, subject to qualification and lender policy.',
-      docs: ['PAN Card & KYC', 'Medical degree / registration certificate',
-             'Practice or employment proof', 'Bank statements',
-             'ITR / income proof, as applicable']
+      docs: ['KYC Documents',
+        'Address Proof for Residence such as Passport, Aadhar Card, Electricity Bill',
+        'Degree Certificate',
+        'Valid Registration Certificate',
+        'ITR for the past 2 years',
+        'Current Bank Account Statement for the last 12 months',
+        'Address proof for Business such as the Prescription letter',
+        'Udyam Aadhar registration certificate']
     }
   };
+
+  function strongText(value) {
+    var el = document.createElement('strong');
+    el.textContent = value;
+    return el;
+  }
 
   function initModal() {
     var modal = document.getElementById('loan-modal');
@@ -222,9 +273,26 @@
       descEl.textContent  = loan.desc;
 
       docsEl.textContent = '';
-      loan.docs.forEach(function (doc) {
+      loan.docs.forEach(function (doc, i) {
         var li = document.createElement('li');
-        li.textContent = doc;
+
+        // Cascade every item, not just the first few. Capped so a long list
+        // still finishes promptly rather than trickling in.
+        li.style.animationDelay = (0.18 + Math.min(i, 24) * 0.045).toFixed(3) + 's';
+
+        // An entry is a plain string, a { heading } that titles a group, or a
+        // { label, text } pair whose label is emphasised. Built as DOM nodes
+        // rather than innerHTML, so the copy is never parsed as markup.
+        if (typeof doc === 'string') {
+          li.textContent = doc;
+        } else if (doc.heading) {
+          li.className = 'modal__docs-heading';
+          li.appendChild(strongText(doc.heading));
+        } else {
+          li.appendChild(strongText(doc.label));
+          li.appendChild(document.createTextNode(' \u2014 ' + doc.text));
+        }
+
         docsEl.appendChild(li);
       });
 
